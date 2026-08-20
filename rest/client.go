@@ -8,12 +8,16 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/massive-com/client-go/v3/rest/gen"
+	"github.com/curtrube/massive-client-go/rest/gen"
 )
+
+// DefaultBaseURL is the production Massive API endpoint.
+const DefaultBaseURL = "https://api.massive.com"
 
 type Client struct {
 	*gen.ClientWithResponses
 	httpClient *http.Client
+	baseURL    string
 	apiKey     string
 	trace      bool
 	pagination bool
@@ -27,6 +31,17 @@ func WithTrace(enabled bool) Option {
 
 func WithPagination(enabled bool) Option {
 	return func(c *Client) { c.pagination = enabled }
+}
+
+// WithHTTPClient overrides the internally created *http.Client.
+func WithHTTPClient(client *http.Client) Option {
+	return func(c *Client) { c.httpClient = client }
+}
+
+// WithBaseURL overrides the default API base URL (DefaultBaseURL). Useful for
+// pointing the client at a test server such as net/http/httptest.
+func WithBaseURL(url string) Option {
+	return func(c *Client) { c.baseURL = url }
 }
 
 // New is backward-compatible (no options = trace=false, pagination=true)
@@ -44,6 +59,7 @@ func NewWithOptions(apiKey string, opts ...Option) *Client {
 
 	c := &Client{
 		apiKey:     apiKey,
+		baseURL:    DefaultBaseURL,
 		trace:      false,
 		pagination: true,
 	}
@@ -52,20 +68,28 @@ func NewWithOptions(apiKey string, opts ...Option) *Client {
 		opt(c)
 	}
 
-	// Create transport (with debug if trace is on)
-	var transport http.RoundTripper = http.DefaultTransport
-	if c.trace {
-		transport = &debugTransport{base: http.DefaultTransport}
-	}
+	if c.httpClient == nil {
+		// Create transport (with debug if trace is on)
+		var transport http.RoundTripper = http.DefaultTransport
+		if c.trace {
+			transport = &debugTransport{base: http.DefaultTransport}
+		}
 
-	// This http.Client is shared by the generated client AND the iterator
-	c.httpClient = &http.Client{
-		Timeout:   60 * time.Second,
-		Transport: transport,
+		// This http.Client is shared by the generated client AND the iterator
+		c.httpClient = &http.Client{
+			Timeout:   60 * time.Second,
+			Transport: transport,
+		}
+	} else if c.trace {
+		base := c.httpClient.Transport
+		if base == nil {
+			base = http.DefaultTransport
+		}
+		c.httpClient.Transport = &debugTransport{base: base}
 	}
 
 	var err error
-	c.ClientWithResponses, err = gen.NewClientWithResponses("https://api.massive.com",
+	c.ClientWithResponses, err = gen.NewClientWithResponses(c.baseURL,
 		gen.WithHTTPClient(c.httpClient), // ← THIS makes the FIRST request traced
 		gen.WithRequestEditorFn(c.addHeaders),
 	)
