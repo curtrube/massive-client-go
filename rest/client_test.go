@@ -15,13 +15,3 @@ func TestDefaultsUnchanged(t *testing.T) {
 	assert.Truef(t, c.pagination, "defaults should be pagination=true, got pagination=%v", c.pagination)
 	assert.Falsef(t, c.trace, "defaults should be trace=false, got trace=%v", c.trace)
 }
-
-//func TestWithHTTPClientAndBaseURL(t *testing.T) {
-//	var testServer *httptest.Server
-//	var authHeaders []string
-//
-//	testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//		authHeaders = append(authHeaders, r.Header.Get("Authorization"))
-//		w.Header().Set("Content-Type", "application/json")
-//	}))
-//}

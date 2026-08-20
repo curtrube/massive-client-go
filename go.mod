@@ -1,4 +1,4 @@
-module github.com/massive-com/client-go/v3
+module github.com/curtrube/massive-client-go
 
 go 1.21
 

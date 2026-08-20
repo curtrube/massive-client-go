@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/massive-com/client-go/v3/rest/gen"
+	"github.com/curtrube/massive-client-go/rest/gen"
 )
 
 // DefaultBaseURL is the production Massive API endpoint.
